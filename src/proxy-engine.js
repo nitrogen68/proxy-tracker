@@ -1,49 +1,14 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { USER_AGENT, TIMEOUT } = require('./config');
-const { generateInterceptor } = require('./interceptor');
-const { generateDashboard } = require('./dashboard-ui');
-
-async function fetchTarget(url) {
-  const res = await axios.get(url, {
-    headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' },
-    timeout: TIMEOUT,
-    maxRedirects: 10,
-    validateStatus: () => true,
-    responseType: 'text'
-  });
-  return res;
-}
-
-function rewriteUrls($, targetHost, assetProxyBase) {
-  const selectors = [
-    ['src', 'img, script, iframe, embed, source, track'],
-    ['href', 'link[rel="stylesheet"], a'],
-    ['data-src', 'img'],
-    ['poster', 'video'],
-    ['action', 'form']
-  ];
-  
-  selectors.forEach(([attr, sel]) => {
-    $(sel).each((_, el) => {
-      const val = $(el).attr(attr);
-      if (!val) return;
-      if (val.startsWith('//')) {
-        $(el).attr(attr, assetProxyBase + '?url=https:' + encodeURIComponent(val));
-      } else if (val.startsWith('http')) {
-        $(el).attr(attr, assetProxyBase + '?url=' + encodeURIComponent(val));
-      } else if (val.startsWith('/') && !val.startsWith('//')) {
-        $(el).attr(attr, assetProxyBase + '?url=' + encodeURIComponent('https://' + targetHost + val));
-      }
-    });
-  });
-}
-
 function processHtml(html, targetUrl, currentProxyUrl, assetProxyBase, fullProxy) {
   const $ = cheerio.load(html, { decodeEntities: false });
   const parsed = new URL(targetUrl);
-  const baseUrl = parsed.origin + parsed.pathname.replace(/\\/[^\\/]*$/, '/') + '/';
   
+  // ✅ PERBAIKAN: baseUrl tanpa regex bermasalah
+  let pathname = parsed.pathname;
+  if (!pathname.endsWith('/')) {
+    pathname = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+  }
+  const baseUrl = parsed.origin + pathname;
+
   // Inject base tag
   if ($('head').length) {
     $('head').prepend(`<base href="${baseUrl}">`);
@@ -70,5 +35,3 @@ function processHtml(html, targetUrl, currentProxyUrl, assetProxyBase, fullProxy
   
   return $.html();
 }
-
-module.exports = { fetchTarget, processHtml };
