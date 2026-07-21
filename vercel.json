@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/asset-proxy", "dest": "/api/asset-proxy.js" },
+    { "src": "/logger", "dest": "/api/logger.js" },
+    { "src": "/(.*)", "dest": "/api/index.js" }
+  ]
+}
