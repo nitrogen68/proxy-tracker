@@ -1,9 +1,6 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/asset-proxy", "dest": "/api/index.js" },
-    { "src": "/logger", "dest": "/api/index.js" },
-    { "src": "/proxy", "dest": "/api/index.js" },
     { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
